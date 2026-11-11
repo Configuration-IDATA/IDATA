@@ -1,5 +1,5 @@
-var CACHE='ol-idata-v1.14-web1';
-var ASSETS=['./','index.html','data.js','manifest.webmanifest','icon-192.png','icon-512.png','apple-touch-icon.png'];
+var CACHE='ol-idata-v1.15-web1';
+var ASSETS=['./','index.html','data.js','logo.jpg','manifest.webmanifest','icon-192.png','icon-512.png','apple-touch-icon.png'];
 self.addEventListener('install',function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(ASSETS);}).then(function(){return self.skipWaiting();}));
 });

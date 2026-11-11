@@ -23,6 +23,7 @@
     --tcard:#ffffff; --bar:#ffffff; --barline:rgba(45,111,212,.55);
   }
   html.light .flagru{border:1px solid #000;}
+  #logo{display:block; height:40px; width:auto; border-radius:9px; margin:0 2px 10px;}
   #theme{margin-left:auto; padding:7px 12px; border-radius:10px; background:var(--card2);
     border:1px solid var(--line); color:var(--text); font-size:15px; cursor:pointer;}
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
@@ -31,7 +32,6 @@
   body{padding:max(14px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom));}
   header{display:flex; align-items:baseline; margin:2px 2px 14px;}
   header h1{font-size:19px; margin:0; letter-spacing:.3px;}
-  header .sub{color:var(--muted); font-size:13px; margin-left:10px;}
 
   .card{background:var(--card); border:1px solid var(--line); border-radius:16px;
     padding:16px; margin-bottom:14px;}
@@ -148,9 +148,9 @@
 <meta name="apple-mobile-web-app-title" content="ОЛ iDATA">
 </head>
 <body>
+<img id="logo" src="logo.jpg" alt="iDATA">
 <header>
   <h1>Конфигуратор оборудования IDATA</h1>
-  <span class="sub">подбор по опросному листу</span>
   <button id="theme" onclick="toggleTheme()">☀️</button>
 </header>
 <div class="card">
@@ -843,6 +843,8 @@ function applyTheme(){
 var light = document.documentElement.className==='light';
 var b = document.getElementById('theme');
 if(b) b.textContent = light? '🌙' : '☀️';
+var mt = document.querySelector('meta[name="theme-color"]');
+if(mt) mt.setAttribute('content', light? '#ffffff' : '#0f1115');
 }
 function toggleTheme(){
 var el = document.documentElement;
