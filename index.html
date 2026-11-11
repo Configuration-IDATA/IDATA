@@ -224,6 +224,10 @@
       <div class="segs" id="rp"></div>
     </div>
     <div class="qrow">
+      <label>Аплинк <small>— 10G у 3730-R, 40/100G у 6130-R, 400G у 8010-R</small></label>
+      <div class="segs" id="rup"></div>
+    </div>
+    <div class="qrow">
       <label>PoE <small>— только 3730-R</small></label>
       <div class="segs" id="rpoe"></div>
     </div>
@@ -271,7 +275,7 @@ pdf и сайтом — перед подачей цифр в ТЗ сверяй�
 <script src="data.js"></script>
 <script>'use strict';
 var APK = window.OlAndroid || null;
-var RQ = {rser:0, rp:0, rpoe:-1, rpsu:0, rac:0, rair:-1};
+var RQ = {rser:0, rp:0, rup:0, rpoe:-1, rpsu:0, rac:0, rair:-1};
 var rrOpen = -1;
 function toggleRR(i){
 rrOpen = (rrOpen===i)? -1 : i;
@@ -280,6 +284,7 @@ renderRR();
 function rrMatch(d){
 if(RQ.rser && d.fam!==RQ.rser-1) return null;
 if(RQ.rp && d.p<RQ.rp) return null;
+if(RQ.rup && d.up<RQ.rup) return null;
 if(RQ.rpoe===0 && d.poeW>0) return null;
 if(RQ.rpoe>0 && d.poeW<RQ.rpoe) return null;
 if(RQ.rpsu && d.npsu!==RQ.rpsu) return null;
@@ -374,7 +379,7 @@ else { Q.psu ^= v; }   // клик включает/снимает; все сн�
 buildForm(); render();
 }
 function setQ(k, v){
-if(k==='rser'||k==='rp'||k==='rpoe'||k==='rpsu'||k==='rac'||k==='rair'){ RQ[k]=v; buildForm(); renderRR(); return; }
+if(k==='rser'||k==='rp'||k==='rup'||k==='rpoe'||k==='rpsu'||k==='rac'||k==='rair'){ RQ[k]=v; buildForm(); renderRR(); return; }
 Q[k]=v;
 if(k==='cls'){
 var rr = v==='rr';
@@ -409,8 +414,9 @@ segs('rte1',[{v:0,t:'не нужно'},{v:1,t:'нужен E1'}],'rte1');
 segs('rtup',[{v:0,t:'неважно'},{v:1,t:'GE'},{v:10,t:'10G'},{v:25,t:'25G'}],'rtup');
 segs('wftype',[{v:'ap',t:'точка доступа'},{v:'ac',t:'контроллер'}],'wftype');
 segs('wfap',[{v:0,t:'—'},{v:448,t:'до 448'},{v:1664,t:'до 1664'},{v:6656,t:'до 6656'}],'wfap');
-segs('rser',[{v:0,t:'неважно'},{v:1,t:'доступ 3730-R'},{v:2,t:'leaf 25G 6130-R'},{v:3,t:'spine 8010-R'}],'rser',0,RQ);
+segs('rser',[{v:0,t:'неважно'},{v:1,t:'Доступ'},{v:2,t:'Leaf'},{v:3,t:'Spine'}],'rser',0,RQ);
 segs('rp',[{v:0,t:'неважно'},{v:24,t:'≥24'},{v:48,t:'≥48'}],'rp',0,RQ);
+segs('rup',[{v:0,t:'неважно'},{v:10,t:'10G'},{v:100,t:'100G'},{v:400,t:'400G'}],'rup',0,RQ);
 segs('rpoe',[{v:-1,t:'неважно'},{v:0,t:'без PoE'},{v:380,t:'≥380Вт'},{v:760,t:'≥760Вт'},{v:1440,t:'≥1440Вт'}],'rpoe',0,RQ);
 segs('rpsu',[{v:0,t:'неважно'},{v:1,t:'1× БП'},{v:2,t:'2× БП (резерв)'}],'rpsu',0,RQ);
 segs('rac',[{v:0,t:'неважно'},{v:1,t:'AC'},{v:2,t:'DC'}],'rac',0,RQ);
@@ -491,6 +497,39 @@ var PPS = {
 'IDS8030-2-8':'19,04 Bpps'};
 function fullSpecs(d){
 var m=d.m, L=[], pr='';
+if(d.cls==='rt'){
+var wan={'IDR2100-8T-4T4S2X':'4× GE + 4× SFP + 2× 10G SFP+',
+'IDR3100-24T-4T2S2X':'4× GE + 2× SFP + 2× 10G SFP+',
+'IDR4100-24T-8X8Y':'8× SFP+ (10G) + 8× SFP28 (25G)'}[m];
+L.push('<b>LAN:</b> '+d.ge+'× 10/100/1000Base-T'+(wan? ' · <b>WAN:</b> '+wan:' · <b>WAN:</b> '+d.ge+'× GE (комбо)'));
+L.push('<b>4G:</b> '+(d.g4? d.g4+'× модем (2 SIM, резерв операторов)':'нет')+' · <b>E1:</b> '+(d.e1? 'есть (модули IDR-M-4E1/4CE1)':'нет'));
+L.push('<b>БП:</b> '+(/IDR2000/.test(m)? 'внешний адаптер 12В (в комплекте)'
+: m==='IDR2100-8T-4T4S2X'? 'встроенный AC 100–240В + разъём 12В'
+: m==='IDR3100-24T-4T2S2X'? 'два встроенных AC (резерв без hot-swap)'
+: '2 слота hot-swap'));
+L.push('<b>ПО:</b> RIP/RIPng · OSPF · IS-IS · BGP/BGP4+ · MPLS (LDP/VPLS/TE/L3VPN/6PE) · SR-MPLS/SRv6 · IPsec/GRE/L2TP · VRRP/BFD');
+L.push('<b>условия:</b> '+(d.tmin<0? 'от '+d.tmin+'°C':'0…+45°C')
++(m==='IDR4100-24T-8X8Y'? ' · 2,3 ГГц 8 ядер / 16 ГБ RAM / 4 слота расширения'
+: m==='IDR3100-24T-4T2S2X'? ' · Dual Core / 2 ГБ / 4 слота расширения · <86Вт'
+: m==='IDR2100-8T-4T4S2X'? ' · Dual Core / 2 ГБ / 2 слота расширения · <35Вт'
+: ' · Dual Core / 512 МБ · пассив (2000) / вентилятор (2000E) · ≤20Вт'));
+return L;
+}
+if(d.cls==='wf'){
+if(d.wf==='ap'){
+L.push('<b>Wi-Fi 7</b> (802.11a/b/g/n/ac/ax/be) · 2×2:2 MIMO · три радио 2,4 / 5 / 6 ГГц');
+L.push('<b>скорости:</b> 688 Мбит/с / 2,88 Гбит/с / 5,77 Гбит/с · IP51');
+L.push('<b>порты:</b> 2.5/5G NBASE-T (PoE+) · GE · слот 10G SFP+ · USB 3.0 · Bluetooth 5.0');
+L.push('<b>питание:</b> только PoE+ 802.3at ≤25Вт · потолочный монтаж · 0…+45°C');
+}else{
+L.push('<b>контроллер</b> · до '+d.ap+' AP (лицензии шагами +32/+64/+128)');
+L.push('<b>пропускная:</b> '+(d.ap>=6656? '40':'20')+' Гбит/с · клиенты: '
++(d.ap===448? '6/12 тыс.':d.ap===1664? '15/30 тыс.':'40/80 тыс.')+' (централизов./распределённая)');
+L.push('<b>порты:</b> '+(d.ap>=6656? '24× GE + 8× SFP+ (10G) + 8× SFP28 (10/25G)':'12× GE + 8× SFP28 (1/10/25G)'));
+L.push('<b>БП:</b> 2 слота hot-swap · IDP75-AC 75Вт / IDP150-AC 150Вт (только AC) · ≤'+(d.ap>=6656? '86':'67')+'Вт · 0…+45°C');
+}
+return L;
+}
 if(/IDSI2500/.test(m)) pr='8× 10/100/1000Base-T + 2× 1G SFP';
 else if(m==='IDS6010-24T-18X-8Y') pr='24× GE + 18× SFP+ (10G) + 8× SFP28 (25G)';
 else if(m==='IDS6010-24X-2Q') pr='24× SFP+ (1/10G) + 2× QSFP+ (40G)';
@@ -643,13 +682,10 @@ html='<div class="empty">по таким требованиям в линейк�
 }else{
 title.textContent='Подходят модели ('+out.length+')';
 for(i=0;i<out.length;i++){
-var d=out[i].d, tg=tags(d), w=[];
-warns(d, w);
+var d=out[i].d, tg=tags(d);
 var th='';
 for(var j=0;j<tg.length;j++) th+='<span class="tag '+tg[j].c+'">'+tg[j].t+'</span>';
-var body;
-if(d.cls==='sw') body='<div class="mspecs">'+fullSpecs(d).join('<br>')+'</div>';
-else body='<div class="mspecs">'+d.why+'</div>'+(w.length? '<div class="warn">'+w.join('<br>')+'</div>' : '');
+var body='<div class="mspecs">'+fullSpecs(d).join('<br>')+'</div>';
 html+='<div class="mcard'+(i===0?' top':'')+'">'+
 '<div class="mhead"><div class="mname">'+d.m+'</div>'+
 '<div class="star'+(CMP.indexOf(d.m)>=0?' on':'')+'" onclick="cmpToggle(\''+d.m+'\')">★</div></div>'+
