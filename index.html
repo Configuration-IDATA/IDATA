@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0f1115">
+<title>ОЛ iDATA</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --card2:#1d212b; --line:#262b36;
+    --blue:#4da3ff; --blue2:#2d6fd4; --green:#39c98e; --gold:#f2c14e; --red:#e05555;
+    --text:#e8eaf0; --muted:#8b93a7; --dim:#5a6273;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text);
+    font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  body{padding:max(14px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom));}
+  header{display:flex; align-items:baseline; margin:2px 2px 14px;}
+  header h1{font-size:22px; margin:0; letter-spacing:.5px;}
+  header .sub{color:var(--muted); font-size:13px; margin-left:10px;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:16px; margin-bottom:14px;}
+
+  /* ── форма ── */
+  .qrow{margin-bottom:14px;}
+  .qrow label{display:block; font-size:13px; font-weight:600; margin-bottom:6px;}
+  .qrow label small{color:var(--dim); font-weight:400;}
+  .segs{display:flex; flex-wrap:wrap; gap:6px;}
+  .seg{padding:9px 13px; border-radius:10px; background:var(--card2);
+    border:1px solid var(--line); color:var(--muted); font-size:13px;
+    cursor:pointer; transition:.1s;}
+  .seg.on{background:rgba(77,163,255,.18); border-color:var(--blue); color:var(--text);}
+  select.full{width:100%; background:var(--card2); border:1px solid var(--line);
+    color:var(--text); border-radius:10px; padding:10px; font-size:15px; min-height:44px;}
+
+  /* ── результаты ── */
+  h2{font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--muted);
+    margin:0 0 10px; font-weight:600;}
+  .mcard{background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:13px 15px; margin-bottom:10px;}
+  .mcard.top{border-color:rgba(57,201,142,.45);}
+  .mname{font-size:16px; font-weight:700; letter-spacing:.3px;}
+  .mtags{display:flex; flex-wrap:wrap; gap:6px; margin:7px 0;}
+  .tag{font-size:11px; font-weight:700; padding:3px 8px; border-radius:7px;
+    background:rgba(77,163,255,.14); color:var(--blue);}
+  .tag.g{background:rgba(57,201,142,.14); color:var(--green);}
+  .tag.y{background:rgba(242,193,78,.14); color:var(--gold);}
+  .tag.r{background:rgba(224,85,85,.14); color:var(--red);}
+  .mspecs{font-size:12.5px; color:var(--muted); line-height:1.55;}
+  .mspecs b{color:var(--text); font-weight:600;}
+  .mwhy{font-size:12.5px; color:var(--green); margin-top:6px;}
+  .warn{font-size:12.5px; color:var(--gold); margin-top:6px; line-height:1.5;}
+  .warn:before{content:'⚠ ';}
+  .empty{color:var(--dim); font-size:13px; text-align:center; padding:12px 0;}
+
+  /* ── сравнение ── */
+  .mhead{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
+  .star{flex:none; width:34px; height:34px; border-radius:9px; background:var(--card2);
+    border:1px solid var(--line); color:var(--dim); font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; transition:.1s;}
+  .star.on{color:var(--gold); border-color:rgba(242,193,78,.55); background:rgba(242,193,78,.14);}
+  .cmpbar{position:fixed; left:12px; right:12px; bottom:max(12px, env(safe-area-inset-bottom));
+    z-index:40; display:none; align-items:center; gap:10px;
+    background:#20242e; border:1px solid rgba(77,163,255,.45); border-radius:14px;
+    padding:9px 12px; box-shadow:0 6px 22px rgba(0,0,0,.45);}
+  body.hascmp{padding-bottom:86px;}
+  .cmpbar .cnt{font-size:13px; color:var(--muted); flex:1;}
+  .cmpbar .cnt b{color:var(--text);}
+  .cmpbar button{padding:9px 14px; border-radius:10px; font-size:13px; font-weight:700;
+    cursor:pointer; border:none;}
+  .cmpbar .go{background:var(--blue2); color:#fff;}
+  .cmpbar .go.off{opacity:.45;}
+  .cmpbar .clr{background:transparent; color:var(--muted); border:1px solid var(--line);}
+  .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:92px; z-index:60;
+    background:#262b36; color:var(--text); font-size:12.5px; padding:8px 14px; border-radius:10px;
+    border:1px solid var(--line); display:none; max-width:86%; text-align:center;}
+  #cmpov{position:fixed; inset:0; z-index:50; background:var(--bg); display:none;
+    flex-direction:column;
+    padding:max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));}
+  #cmpov .ovh{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
+  #cmpov .ovt{font-size:18px; font-weight:700; flex:1;}
+  #cmpov .ovh button{padding:8px 13px; border-radius:10px; background:var(--card2);
+    border:1px solid var(--line); color:var(--text); font-size:14px; cursor:pointer;}
+  .ovs{flex:1; overflow:auto; -webkit-overflow-scrolling:touch;}
+  .ctab{border-collapse:collapse; font-size:12.5px; line-height:1.45; width:max-content; min-width:100%;}
+  .ctab th,.ctab td{padding:8px 9px; border-bottom:1px solid var(--line); text-align:left;
+    vertical-align:top; min-width:118px;}
+  .ctab thead th{position:sticky; top:0; background:#171a21; z-index:2; font-size:13px;}
+  .ctab th:first-child,.ctab td:first-child{position:sticky; left:0; min-width:86px; max-width:86px;
+    background:#171a21; color:var(--muted); font-weight:600; z-index:3;}
+  .ctab .rm{color:var(--dim); cursor:pointer; font-weight:400; margin-left:4px;}
+  .ctab tr.d td{background:rgba(242,193,78,.07);}
+  .ctab tr.d td:first-child{background:#20242e; color:var(--gold);}
+
+  /* ── реестровые (-R) ── */
+  .fam{background:var(--card); border:1px solid rgba(57,201,142,.45); border-radius:14px;
+    padding:13px 15px; margin-bottom:12px;}
+  .fam .role{font-size:12px; color:var(--green); font-weight:700; margin:3px 0 8px;}
+  .specli{font-size:12.5px; color:var(--muted); line-height:1.65;}
+  .specli b{color:var(--text); font-weight:600;}
+  .skuhead{font-size:13px; font-weight:600; color:var(--text); cursor:pointer;
+    padding:12px 0 4px; display:flex; justify-content:space-between;}
+  .skuhead:after{content:'▾'; color:var(--muted);}
+  .sku{display:flex; justify-content:space-between; gap:10px; font-size:12.5px;
+    padding:6px 8px; border-radius:8px;}
+  .sku:nth-child(odd){background:rgba(255,255,255,.03);}
+  .sku .art{color:var(--blue); font-weight:600; flex:none;}
+  .sku .desc{color:var(--muted); text-align:right;}
+  .lic{font-size:12.5px; color:var(--muted); line-height:1.65; margin-top:8px;}
+  .lic b{color:var(--gold); font-weight:600;}
+  .dents{margin-top:8px; border-top:1px solid var(--line); padding-top:6px;}
+  .rrnote{font-size:11.5px; color:var(--dim); line-height:1.5; margin:0 2px 14px;}
+
+  footer{text-align:center; color:var(--dim); font-size:12px; padding:6px 0 2px;}
+  .foot{font-size:11px; color:var(--dim); line-height:1.5; margin:0 2px 14px;}
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#10131a">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ОЛ iDATA">
+</head>
+<body>
+<header>
+  <h1>ОЛ iDATA</h1>
+  <span class="sub">подбор по опросному листу</span>
+</header>
+
+<div class="card">
+  <div class="qrow">
+    <label>Что подбираем</label>
+    <div class="segs" id="qcls"></div>
+  </div>
+
+  <div id="swform">
+    <div class="qrow">
+      <label>Порты GE (медь) <small>— сколько медных гигабитных надо</small></label>
+      <div class="segs" id="qge"></div>
+    </div>
+    <div class="qrow">
+      <label>Порты SFP/SFP+ (оптика) <small>— оптический доступ/агрегация</small></label>
+      <div class="segs" id="qsfp"></div>
+    </div>
+    <div class="qrow">
+      <label>Аплинк</label>
+      <div class="segs" id="qup"></div>
+    </div>
+    <div class="qrow">
+      <label>PoE</label>
+      <div class="segs" id="qpoe"></div>
+    </div>
+    <div class="qrow" id="poeWrow">
+      <label>PoE-бюджет</label>
+      <div class="segs" id="qpoew"></div>
+    </div>
+    <div class="qrow">
+      <label>Блоки питания <small>— можно выбрать несколько</small></label>
+      <div class="segs" id="qpsu"></div>
+    </div>
+    <div class="qrow">
+      <label>Температура</label>
+      <div class="segs" id="qtemp"></div>
+    </div>
+    <div class="qrow">
+      <label>Уровень</label>
+      <div class="segs" id="qlvl"></div>
+    </div>
+  </div>
+
+  <div id="rtform" style="display:none">
+    <div class="qrow">
+      <label>Порты LAN GE</label>
+      <div class="segs" id="rtge"></div>
+    </div>
+    <div class="qrow">
+      <label>4G-резервирование</label>
+      <div class="segs" id="rt4g"></div>
+    </div>
+    <div class="qrow">
+      <label>Порты E1 ( legacy ТЧ-каналы)</label>
+      <div class="segs" id="rte1"></div>
+    </div>
+    <div class="qrow">
+      <label>Аплинк</label>
+      <div class="segs" id="rtup"></div>
+    </div>
+  </div>
+
+  <div id="wfform" style="display:none">
+    <div class="qrow">
+      <label>Тип устройства</label>
+      <div class="segs" id="wftype"></div>
+    </div>
+    <div class="qrow" id="apcRow" style="display:none">
+      <label>Сколько точек доступа повесим</label>
+      <div class="segs" id="wfap"></div>
+    </div>
+  </div>
+
+  <div id="rrform" style="display:none">
+    <div class="qrow">
+      <label>Семейство <small>— доступ / leaf / spine</small></label>
+      <div class="segs" id="rser"></div>
+    </div>
+    <div class="qrow">
+      <label>Активных портов <small>— GE у 3730-R, SFP28 у 6130-R, QSFP28 у 8010-R</small></label>
+      <div class="segs" id="rp"></div>
+    </div>
+    <div class="qrow">
+      <label>PoE <small>— только 3730-R</small></label>
+      <div class="segs" id="rpoe"></div>
+    </div>
+    <div class="qrow">
+      <label>Блоки питания <small>— 1× или резервируемые 2×</small></label>
+      <div class="segs" id="rpsu"></div>
+    </div>
+    <div class="qrow">
+      <label>Питание</label>
+      <div class="segs" id="rac"></div>
+    </div>
+    <div class="qrow">
+      <label>Обдув <small>— FTB к задней / BTF к передней; у 3730-R не опционален</small></label>
+      <div class="segs" id="rair"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2 id="resTitle">Подходят модели</h2>
+  <div id="res"></div>
+</div>
+
+<p class="foot">база: даташеты iDATA + dynaswitch.ru (сверка 11.11.2026). спеки дрейфуют между
+pdf и сайтом — перед подачей цифр в ТЗ сверяйся с dynaswitch.ru. «ppS не публикуется»
+означает: запросить у iDATA, не выдумывать.</p>
+
+<div class="cmpbar" id="cmpbar">
+  <span class="cnt">в сравнении: <b id="cmpN">0</b></span>
+  <button class="go" id="cmpgo" onclick="cmpOpen()">сравнить</button>
+  <button class="clr" onclick="cmpClear()">сброс</button>
+</div>
+<div class="toast" id="cmptoast"></div>
+<div id="cmpov">
+  <div class="ovh">
+    <div class="ovt">сравнение</div>
+    <span class="seg" id="difft" onclick="cmpDiffToggle()">только различия</span>
+    <button onclick="cmpClose()">✕</button>
+  </div>
+  <div class="ovs" id="cmpbody"></div>
+</div>
+
+<footer id="ver"></footer>
+
+<script src="data.js"></script>
+<script>'use strict';
+var APK = window.OlAndroid || null;
+var RQ = {rser:0, rp:0, rpoe:-1, rpsu:0, rac:0, rair:-1};
+var rrOpen = -1;
+function toggleRR(i){
+rrOpen = (rrOpen===i)? -1 : i;
+renderRR();
+}
+function rrMatch(d){
+if(RQ.rser && d.fam!==RQ.rser-1) return null;
+if(RQ.rp && d.p<RQ.rp) return null;
+if(RQ.rpoe===0 && d.poeW>0) return null;
+if(RQ.rpoe>0 && d.poeW<RQ.rpoe) return null;
+if(RQ.rpsu && d.npsu!==RQ.rpsu) return null;
+if(RQ.rac && d.acdc!==RQ.rac-1) return null;
+if(RQ.rair>=0 && d.air!==RQ.rair) return null;
+var s = Math.max(0, d.p-RQ.rp)*2 + (RQ.rpoe>0? Math.max(0, d.poeW-RQ.rpoe)/200 : 0) + d.fam*0.5;
+if(RQ.rpsu===0 && d.npsu===2) s += 0.4;
+return s;
+}
+function rrTags(d){
+var t=[], add=function(x,c){ t.push({t:x, c:c||''}); };
+add(['доступ','leaf 25G','spine'][d.fam],'g');
+add(d.p+'× '+d.pt+(d.fam===1?' (1/10/25G)':''));
+if(d.up) add(d.up+'G uplink');
+if(d.poeW) add('PoE '+d.poeW+'W');
+add(d.npsu+'× БП'+(d.pw?' '+d.pw+'Вт':'')+' '+(d.acdc?'DC':'AC'), d.npsu===2?'g':'');
+if(d.air<2) add(d.air?'BTF (к передней)':'FTB (к задней)');
+if(d.sw) add(d.sw>=1000? (d.sw/1000+' Тбит/с') : d.sw+' Гбит/с');
+return t;
+}
+function rrWarns(d){
+var w=[];
+if(d.fam===0){
+w.push('дельты -R: VRRP 100 (не 255), jumbo 9216 (не 12000), OOB 10/100 (не GE) — в ТЗ ставить цифры -R');
+if(d.p===24) w.push('порты 24 — лицензией IDS3730-L-24'+(d.poeW?'; PoE на 24 — IDS3730-L-24PoE':''));
+}
+if(d.fam===1){
+w.push('PPS не публикуется даже в -R даташете — в ТЗ цифру не ставить без письма iDATA; 6130 существует только как -R');
+if(d.p===24) w.push('24 слота — лицензией IDS6130-L-24');
+}
+if(d.fam===2) w.push('12,8 Тбит/с опубликовано только в -R даташете; у обычного 8010 ёмкость нигде не указана');
+return w;
+}
+function rrCard(d, top){
+var tg=rrTags(d), th='';
+for(var j=0;j<tg.length;j++) th+='<span class="tag '+tg[j].c+'">'+tg[j].t+'</span>';
+var w=rrWarns(d);
+return '<div class="mcard'+(top?' top':'')+'">'+
+'<div class="mhead"><div class="mname">'+d.m+'</div>'+
+'<div class="star'+(CMP.indexOf(d.m)>=0?' on':'')+'" onclick="cmpToggle(\''+d.m+'\')">★</div></div>'+
+'<div class="mtags">'+th+'</div>'+
+'<div class="mspecs">'+d.why+'</div>'+
+(w.length? '<div class="warn">'+w.join('<br>')+'</div>':'')+'</div>';
+}
+function renderRR(){
+var out=[], i;
+for(i=0;i<RDB.length;i++){
+var s=rrMatch(RDB[i]);
+if(s!==null) out.push({d:RDB[i], s:s});
+}
+out.sort(function(a,b){return a.s-b.s;});
+var title=document.getElementById('resTitle'), html='';
+if(!out.length){
+title.textContent='Подходят SKU (-R)';
+html='<div class="empty">по таким требованиям среди -R пусто.<br>грабли: PoE есть только у 3730-R; обдув BTF — только у 6130-R/8010-R (BTF-DC не существует); у 3730-R PSU в -R даташете только AC.<br>попробуй ослабить фильтры.</div>';
+}else{
+title.textContent='Подходят SKU (-R) ('+out.length+')';
+for(i=0;i<out.length;i++) html+=rrCard(out[i].d, i===0);
+}
+html+='<div class="skuhead" style="margin-top:14px">спецификации семейств — справочник</div>';
+for(i=0;i<RRD.length;i++){
+var f=RRD[i], sh='';
+for(var j=0;j<f.specs.length;j++) sh+='<div class="specli">'+f.specs[j]+'</div>';
+html+='<div class="fam"><div class="mname" onclick="toggleRR('+i+')" style="cursor:pointer">'+f.fam+(rrOpen===i?' ▾':' ▸')+'</div>'+
+(rrOpen===i? '<div class="role">'+f.role+'</div>'+sh+(f.lic?'<div class="lic">'+f.lic+'</div>':'')+(f.warn?'<div class="warn">'+f.warn+'</div>':'') : '')+
+'</div>';
+}
+document.getElementById('res').innerHTML=html;
+}
+var Q = {cls:"sw", ge:0, sfp:0, up:0, poe:0, poeW:0, psu:0, temp:0, lvl:2, res:0,
+rtge:0, rt4g:0, rte1:0, rtup:0, wftype:"ap", wfap:0};
+function segs(host, opts, key, form, st){
+st = st || Q;
+var h=document.getElementById(host), html='';
+for(var i=0;i<opts.length;i++){
+html+='<span class="seg'+(st[key]===opts[i].v?' on':'')+
+'" onclick="setQ(\''+key+'\','+(typeof opts[i].v==='string'?("'"+opts[i].v+"'"):opts[i].v)+
+(form?(',\''+form+'\''):'')+')">'+opts[i].t+'</span>';
+}
+h.innerHTML=html;
+}
+function segsPsu(){
+var h=document.getElementById('qpsu'), html='';
+var opts=[{v:0,t:'неважно'},{v:1,t:'один'},{v:2,t:'два'},{v:4,t:'модульные'}];
+for(var i=0;i<opts.length;i++){
+var on = opts[i].v===0 ? (Q.psu===0) : !!(Q.psu & opts[i].v);
+html+='<span class="seg'+(on?' on':'')+'" onclick="togglePsu('+opts[i].v+')">'+opts[i].t+'</span>';
+}
+h.innerHTML=html;
+}
+function togglePsu(v){
+if(v===0){ Q.psu=0; }
+else { Q.psu ^= v; }   // клик включает/снимает; все сняты = неважно
+buildForm(); render();
+}
+function setQ(k, v){
+if(k==='rser'||k==='rp'||k==='rpoe'||k==='rpsu'||k==='rac'||k==='rair'){ RQ[k]=v; buildForm(); renderRR(); return; }
+Q[k]=v;
+if(k==='cls'){
+var rr = v==='rr';
+refOpen = -1;
+document.getElementById('swform').style.display = (v==='sw' && !rr)?'':'none';
+document.getElementById('rtform').style.display = (v==='rt' && !rr)?'':'none';
+document.getElementById('wfform').style.display = (v==='wf' && !rr)?'':'none';
+document.getElementById('rrform').style.display = rr?'':'none';
+document.getElementById('res').style.display = rr?'':'';
+if(rr){ renderRR(); buildForm(); return; }
+}
+if(k==='poe'){ document.getElementById('poeWrow').style.display = v>0?'':'none';
+if(v===0) Q.poeW=0; }
+if(k==='wftype'){ document.getElementById('apcRow').style.display = v==='ac'?'':'none';
+if(v==='ap') Q.wfap=0; }
+buildForm(); render();
+}
+function buildForm(){
+segs('qcls',[{v:'sw',t:'коммутатор'},{v:'rt',t:'маршрутизатор'},{v:'wf',t:'Wi-Fi'},{v:'rr',t:'-R реестровые'}],'cls');
+segs('qge',[{v:0,t:'неважно'},{v:8,t:'≥8'},{v:24,t:'≥24'},{v:48,t:'≥48'}],'ge');
+segs('qsfp',[{v:0,t:'неважно'},{v:24,t:'≥24'},{v:48,t:'≥48'}],'sfp');
+segs('qup',[{v:0,t:'неважно'},{v:10,t:'10G'},{v:25,t:'25G'},{v:100,t:'100G'},{v:400,t:'400G'}],'up');
+segs('qpoe',[{v:0,t:'не нужно'},{v:30,t:'PoE+ ≤30W'},{v:90,t:'PoE++ 90W (UPoE)'}],'poe');
+segs('qpoew',[{v:0,t:'неважно'},{v:370,t:'≥370W'},{v:720,t:'≥720W'},{v:1440,t:'≥1440W'}],'poeW');
+segsPsu();
+segs('qtemp',[{v:0,t:'серверная 0…+45'},{v:1,t:'улица/цех −40'}],'temp');
+segs('qlvl',[{v:1,t:'L2'},{v:2,t:'L3'},{v:3,t:'ЦОД: VxLAN/EVPN'}],'lvl');
+segs('rtge',[{v:0,t:'неважно'},{v:5,t:'5 GE'},{v:8,t:'8 GE'},{v:24,t:'24 GE'}],'rtge');
+segs('rt4g',[{v:0,t:'не нужно'},{v:1,t:'4G'},{v:2,t:'2×4G'}],'rt4g');
+segs('rte1',[{v:0,t:'не нужно'},{v:1,t:'нужен E1'}],'rte1');
+segs('rtup',[{v:0,t:'неважно'},{v:1,t:'GE'},{v:10,t:'10G'},{v:25,t:'25G'}],'rtup');
+segs('wftype',[{v:'ap',t:'точка доступа'},{v:'ac',t:'контроллер'}],'wftype');
+segs('wfap',[{v:0,t:'—'},{v:448,t:'до 448'},{v:1664,t:'до 1664'},{v:6656,t:'до 6656'}],'wfap');
+segs('rser',[{v:0,t:'неважно'},{v:1,t:'доступ 3730-R'},{v:2,t:'leaf 25G 6130-R'},{v:3,t:'spine 8010-R'}],'rser',0,RQ);
+segs('rp',[{v:0,t:'неважно'},{v:24,t:'≥24'},{v:48,t:'≥48'}],'rp',0,RQ);
+segs('rpoe',[{v:-1,t:'неважно'},{v:0,t:'без PoE'},{v:380,t:'≥380Вт'},{v:760,t:'≥760Вт'},{v:1440,t:'≥1440Вт'}],'rpoe',0,RQ);
+segs('rpsu',[{v:0,t:'неважно'},{v:1,t:'1× БП'},{v:2,t:'2× БП (резерв)'}],'rpsu',0,RQ);
+segs('rac',[{v:0,t:'неважно'},{v:1,t:'AC'},{v:2,t:'DC'}],'rac',0,RQ);
+segs('rair',[{v:-1,t:'неважно'},{v:0,t:'FTB (к задней)'},{v:1,t:'BTF (к передней)'}],'rair',0,RQ);
+}
+function match(d){
+if(Q.cls==='sw'){
+if(d.cls!=='sw') return null;
+if(Q.ge && d.ge<Q.ge) return null;
+if(Q.sfp && d.sfp<Q.sfp) return null;
+if(Q.up && d.up<Q.up) return null;
+if(Q.poe){
+if(d.poeW===0) return null;
+if(Q.poe===90 && !d.upoe) return null;
+if(Q.poeW && d.poeW<Q.poeW) return null;
+}
+if(Q.temp && d.tmin>0) return null;
+if(Q.temp && Q.temp===1 && d.tmin>-40) return null;
+if(Q.psu && !(Q.psu & d.psu)) return null;
+if(Q.lvl===3 && d.lvl<3) return null;
+if(Q.lvl===1 && d.lvl<1) return null;
+var s=0;
+s += Math.max(0, d.ge-Q.ge)*2 + Math.max(0, d.sfp-Q.sfp);
+if(Q.up===0) s += d.up/10; else s += Math.max(0,(d.up-Q.up))*3;
+if(Q.poe===0 && d.poeW>0) s += d.poeW/200;
+s += d.sw? d.sw/400 : 0;
+return s;
+}
+if(Q.cls==='rt'){
+if(d.cls!=='rt') return null;
+if(Q.rtge && d.ge<Q.rtge) return null;
+if(Q.rt4g && (d.g4||0)<Q.rt4g) return null;
+if(Q.rte1 && !d.e1) return null;
+if(Q.rtup && d.up<Q.rtup) return null;
+if(Q.temp===1 && d.tmin>-20) return null;
+return Math.max(0, d.ge-Q.rtge)*2 + (d.g4||0) + (Q.rtup?0:d.up);
+}
+if(d.cls!=='wf') return null;
+if(Q.wftype==='ap'){ if(d.wf!=='ap') return null; return 0; }
+if(d.wf!=='ac') return null;
+if(Q.wfap && d.ap<Q.wfap) return null;
+return Q.wfap? Math.max(0, d.ap-Q.wfap)/1000 : d.ap/1000;
+}
+function warns(d, list){
+if(/IDS6130/.test(d.m)) list.push('PPS для 6130 не публикуется — в ТЗ цифру PPS не ставить без письма iDATA');
+if(/IDS3730/.test(d.m)) list.push('OOB у 3730 — 100 Мбит; если ТЗ требует GE-менеджмент — брать 3530/4530');
+if(d.cls==='sw' && d.poeW>0 && !d.upoe) list.push('PoE+ = 30W/порт. Если ТЗ требует 90W (802.3bt) — только IDS6012-24M-4X');
+if(d.res) list.push('суффикс -R = резервируемая (MLAG/VRRP) и реестровая модель МП РФ — плюс в закупках');
+if(d.lvl===3) list.push('для жёстких ТЗ: цифры сайта (окт 2026) ≠ старых PDF — сверить dynaswitch.ru перед подачей');
+if(d.tmin<0) list.push('L2-промышленный: маршрутизации нет, аплинк только 2×1G SFP. Для L3 в мороз — шкаф с подогревом');
+if(/IDS4530/.test(d.m)) list.push('VxLAN/BGP-EVPN и MPLS (LDP, TE, Option-A/B) подтверждены даташетом 11.11.2026 — «VxLAN на доступе» заявлять можно');
+if(/IDS3530-24T/.test(d.m)) list.push('24T — пассивное охлаждение; если ТЗ требует ≥2 вентиляторов — брать 3730');
+if(d.cls==='sw' && !d.psu) list.push('тип БП (встроенный/hot-swap) в базе не подтверждён — сверить dynaswitch.ru перед ТЗ');
+if(/IDS3530/.test(d.m)) list.push('БП встроенный: 24T/48T/24S — двойной, 24P/48P — одинарный (dynaswitch)');
+if(/IDS4530/.test(d.m)) list.push('БП: 2 слота 1+1 (модули IDP120/120M/250/500/500M/880 AC/DC продаются отдельно); «два встроенных» в карточке заказа = «в комплекте»');
+if(/IDS6030/.test(d.m)) list.push('БП: 2 слота hot-swap — IDP550M-01-FTB-AC 550Вт / IDP800M-01-FTB-DC 800Вт / IDP550M-01-BTF-AC (обдув вперёд)');
+if(/IDS6150/.test(d.m)) list.push('БП: 2 слота hot-swap — IDP550M-01-FTB-AC 550Вт / IDP800M-01-FTB-DC 800Вт; 6 вентиляторных слотов');
+if(/IDS8030/.test(d.m)) list.push('БП: 4 слота — IDP1300M-01 AC/DC 1300Вт (FTB/BTF обдув); управление 2× IDS8030-M-CC, линки — M-4E/M-16Y');
+if(/IDS6012/.test(d.m)) list.push('даташет 11.2026: PoE++ 1440Вт / 90Вт на порт — только у 24MP (PSU IDP880); 24M-4X — без PoE (БП встроенный). 6012-M-4X/6X/2Q — модули расширения для слота, не коммутаторы');
+if(/IDSI2500/.test(d.m)) list.push('двойное питание = два резервируемых DC-входа на клеммы, не модули БП');
+if(d.cls==='rt') list.push('throughput/FIB в даташетах IDR не публикуются (даташеты 09.2025) — перед тендером запросить performance-письмо. RIPv1/v2/RIPng и полный MPLS (LDP/VPLS/TE/FRR/L3VPN/6PE) — подтверждены');
+if(/^IDR2000/.test(d.m)) list.push('питание — внешний адаптер 12В (в комплекте); базовая 2000 — пассивная, без вентилятора; 2000E — с вентилятором. −20…+60°C');
+if(/^IDR2100/.test(d.m)) list.push('питание: встроенный AC 100–240В + разъём внешнего 12В БП; 2 слота расширения (IDR-M-4E1/4CE1/4S/4T); <35Вт');
+if(/^IDR3100/.test(d.m)) list.push('два встроенных БП AC — резерв без hot-swap; <86Вт; 4 слота расширения; SR-MPLS/SRv6 + Network Slicing');
+}
+function tags(d){
+var t=[], add=function(x,c){ t.push({t:x, c:c||''}); };
+if(d.ge) add(d.ge+'× GE');
+if(d.sfp) add(d.sfp+'× SFP');
+if(d.up) add(d.up+'G uplink');
+if(d.poeW) add('PoE '+d.poeW+'W');
+if(d.upoe) add('90W/порт','g');
+if(d.sw) add(d.sw>=1000? (d.sw/1000+' Тбит/с') : d.sw+' Гбит/с');
+if(d.lvl===3) add('VxLAN/EVPN');
+if(d.lvl===1) add('L2');
+if(d.res) add('-R');
+if(d.tmin<0) add(d.tmin+'°C','g');
+if(d.ap) add('до '+d.ap+' AP');
+if(d.psu===1) add('БП один');
+else if(d.psu===2) add('БП два (резерв)','g');
+else if(d.psu===4) add('БП модульные','g');
+if(d.g4) add(d.g4+'× 4G','g');
+if(d.e1) add('E1');
+return t;
+}
+var refOpen = -1;
+function toggleRef(i){
+refOpen = (refOpen===i)? -1 : i;
+render();
+}
+function renderRef(cls){
+var arr = REF[cls]; if(!arr) return '';
+var h='<div class="skuhead" style="margin-top:14px">спецификации семейств — справочник</div>';
+for(var i=0;i<arr.length;i++){
+var f=arr[i], sh='';
+for(var j=0;j<f.specs.length;j++) sh+='<div class="specli">'+f.specs[j]+'</div>';
+h+='<div class="fam"><div class="mname" onclick="toggleRef('+i+')" style="cursor:pointer">'+f.fam+(refOpen===i?' ▾':' ▸')+'</div>'+
+(refOpen===i? '<div class="role">'+f.role+'</div>'+sh : '')+'</div>';
+}
+return h;
+}
+function render(){
+if(Q.cls==='rr'){ renderRR(); return; }
+var out=[], i, r;
+for(i=0;i<DB.length;i++){
+var s=match(DB[i]);
+if(s!==null) out.push({d:DB[i], s:s});
+}
+out.sort(function(a,b){return a.s-b.s;});
+var host=document.getElementById('res'), html='';
+var title=document.getElementById('resTitle');
+if(!out.length){
+title.textContent='Подходят модели';
+html='<div class="empty">по таким требованиям в линейке iDATA пусто.<br>оно и видно по цифрам — попробуй ослабить фильтры.<br><br>известные дыры: 8–12 портов с PoE у iDATA нет вообще; ниже −40°C — только IDSI2500 (L2).</div>';
+}else{
+title.textContent='Подходят модели ('+out.length+')';
+var lim=Math.min(out.length, 6);
+for(i=0;i<lim;i++){
+var d=out[i].d, tg=tags(d), w=[];
+warns(d, w);
+var th='';
+for(var j=0;j<tg.length;j++) th+='<span class="tag '+tg[j].c+'">'+tg[j].t+'</span>';
+html+='<div class="mcard'+(i===0?' top':'')+'">'+
+'<div class="mhead"><div class="mname">'+d.m+'</div>'+
+'<div class="star'+(CMP.indexOf(d.m)>=0?' on':'')+'" onclick="cmpToggle(\''+d.m+'\')">★</div></div>'+
+'<div class="mtags">'+th+'</div>'+
+'<div class="mspecs">'+d.why+'</div>'+
+(w.length? '<div class="warn">'+w.join('<br>')+'</div>' : '')+
+'</div>';
+}
+if(out.length>lim) html+='<div class="empty">…и ещё '+(out.length-lim)+' вариантов — сузь фильтры</div>';
+}
+host.innerHTML=html+renderRef(Q.cls);
+}
+var CMP = [], CMPDO = false;
+try{ CMP = JSON.parse(localStorage.getItem('olcmp')||'[]')||[]; }catch(e){ CMP=[]; }
+function cmpGet(m){
+var i;
+for(i=0;i<DB.length;i++) if(DB[i].m===m) return {src:'db', d:DB[i]};
+for(i=0;i<RDB.length;i++) if(RDB[i].m===m) return {src:'rdb', d:RDB[i]};
+return null;
+}
+function cmpSave(){ try{ localStorage.setItem('olcmp', JSON.stringify(CMP)); }catch(e){} }
+function cmpToast(t){
+var el=document.getElementById('cmptoast');
+el.textContent=t; el.style.display='block';
+clearTimeout(cmpToast.t);
+cmpToast.t=setTimeout(function(){ el.style.display='none'; }, 1700);
+}
+function cmpBar(){
+var n=CMP.length;
+document.getElementById('cmpbar').style.display = n?'flex':'none';
+document.getElementById('cmpN').textContent=n;
+document.getElementById('cmpgo').className = 'go'+(n>1?'':' off');
+document.body.className = n?'hascmp':'';
+}
+function cmpToggle(m){
+var i=CMP.indexOf(m);
+if(i>=0) CMP.splice(i,1);
+else if(CMP.length>=6){ cmpToast('максимум 6 — сними звезду у кого-нибудь'); cmpBar(); return; }
+else CMP.push(m);
+cmpSave(); render(); cmpBar();
+if(document.getElementById('cmpov').style.display==='flex'){
+if(CMP.length<2) cmpClose(); else cmpFill();
+}
+}
+function cmpClear(){ CMP=[]; cmpSave(); render(); cmpBar(); cmpClose(); }
+function cmpDiffToggle(){
+CMPDO=!CMPDO;
+document.getElementById('difft').className='seg'+(CMPDO?' on':'');
+cmpFill();
+}
+function cmpClose(){
+document.getElementById('cmpov').style.display='none';
+document.body.style.overflow='';
+}
+function cmpOpen(){
+if(CMP.length<2){ cmpToast('отметь звёздочкой хотя бы две модели'); return; }
+document.getElementById('difft').className='seg'+(CMPDO?' on':'');
+cmpFill();
+document.getElementById('cmpov').style.display='flex';
+document.body.style.overflow='hidden';
+}
+var CMPROWS = [
+['тип', function(x){ var d=x.d;
+if(x.src==='rdb') return ['доступ · 3730-R','leaf 25G · 6130-R','spine · 8010-R'][d.fam];
+return {sw:'коммутатор', rt:'маршрутизатор', wf:'Wi-Fi'}[d.cls]||'—'; }],
+['порты', function(x){ var d=x.d;
+if(x.src==='rdb') return d.p+'× '+d.pt;
+if(d.cls==='sw'){ var s=''; if(d.ge) s+=d.ge+'× GE'; if(d.sfp) s+=(s?' + ':'')+d.sfp+'× SFP'; return s||'—'; }
+if(d.cls==='rt') return d.ge+'× GE LAN';
+return d.wf==='ap'?'точка доступа':'контроллер'; }],
+['аплинк', function(x){ return x.d.up? x.d.up+'G':'—'; }],
+['PoE', function(x){ var d=x.d; return d.poeW? d.poeW+'Вт'+(d.upoe?' · 90Вт/порт':''):'—'; }],
+['уровень', function(x){ var d=x.d;
+if(x.src==='rdb') return d.fam===0?'L2/L3':'L3 · VxLAN/EVPN';
+if(d.cls==='rt') return 'L3';
+return {1:'L2',2:'L3',3:'L3 · VxLAN/EVPN'}[d.lvl]||'—'; }],
+['блоки питания', function(x){ var d=x.d;
+if(x.src==='rdb') return d.npsu+'× '+(d.pw?d.pw+'Вт ':'')+(d.acdc?'DC':'AC')+(d.npsu>1?' (резерв)':'');
+return {0:'—',1:'один встроенный',2:'два встроенных (резерв)',4:'модульные hot-swap'}[d.psu]||'—'; }],
+['коммутация', function(x){ var d=x.d;
+return d.sw? (d.sw>=1000? d.sw/1000+' Тбит/с' : d.sw+' Гбит/с'):'—'; }],
+['температура', function(x){ var d=x.d;
+if(x.src==='rdb') return ['−5…+45°C','0…+45°C','−5…+40°C'][d.fam];
+return d.tmin<0? 'от '+d.tmin+'°C' : '0…+45°C'; }],
+['реестр МП РФ', function(x){ return x.src==='rdb'?'да':(x.d.res?'есть -R версия':'нет'); }],
+['4G-модем', function(x){
+return (x.src==='db'&&x.d.cls==='rt')? ((x.d.g4||0)? x.d.g4+'× 4G':'нет'):'—'; }],
+['слоты E1', function(x){
+return (x.src==='db'&&x.d.cls==='rt')? (x.d.e1?'есть':'нет'):'—'; }],
+['ёмкость Wi-Fi', function(x){
+return (x.src==='db'&&x.d.cls==='wf')? (x.d.ap? 'до '+x.d.ap+' AP':'точка доступа'):'—'; }],
+['заметка', function(x){ return x.d.why||'—'; }],
+['грабли', function(x){ var w=[];
+if(x.src==='db') warns(x.d,w); else w=rrWarns(x.d);
+return w.length? w.join('<br>'):'—'; }]
+];
+function cmpFill(){
+var ms=[], i, j;
+for(i=0;i<CMP.length;i++){ var g=cmpGet(CMP[i]); if(g) ms.push(g); }
+var html='<table class="ctab"><thead><tr><th>параметр</th>';
+for(i=0;i<ms.length;i++)
+html+='<th>'+ms[i].d.m+'<span class="rm" onclick="cmpToggle(\''+ms[i].d.m+'\')">✕</span></th>';
+html+='</tr></thead><tbody>';
+for(var r=0;r<CMPROWS.length;r++){
+var vals=[], same=true;
+for(j=0;j<ms.length;j++){
+var v=CMPROWS[r][1](ms[j]);
+vals.push(v);
+if(j>0 && v!==vals[0]) same=false;
+}
+if(CMPDO && same) continue;
+html+='<tr class="'+(same?'':'d')+'"><td>'+CMPROWS[r][0]+'</td>';
+for(j=0;j<vals.length;j++) html+='<td>'+vals[j]+'</td>';
+html+='</tr>';
+}
+html+='</tbody></table>';
+document.getElementById('cmpbody').innerHTML=html;
+}
+buildForm(); render(); cmpBar();
+document.getElementById('ver').textContent = APK
+? ('ол iDATA · apk '+(APK.version?APK.version():''))
+: 'ол iDATA · веб-версия · база dynaswitch.ru 11.11.2026';
+if('serviceWorker' in navigator && location.protocol==='https:'){
+navigator.serviceWorker.register('sw.js').catch(function(){});
+}</script>
+</body>
+</html>
