@@ -316,13 +316,11 @@ return w;
 function rrCard(d, top){
 var tg=rrTags(d), th='';
 for(var j=0;j<tg.length;j++) th+='<span class="tag '+tg[j].c+'">'+tg[j].t+'</span>';
-var w=rrWarns(d);
 return '<div class="mcard'+(top?' top':'')+'">'+
 '<div class="mhead"><div class="mname"><span class="flagru"></span>'+d.m+'</div>'+
 '<div class="star'+(CMP.indexOf(d.m)>=0?' on':'')+'" onclick="cmpToggle(\''+d.m+'\')">★</div></div>'+
 '<div class="mtags">'+th+'</div>'+
-'<div class="mspecs">'+d.why+'</div>'+
-(w.length? '<div class="warn">'+w.join('<br>')+'</div>':'')+'</div>';
+'<div class="mspecs">'+fullSpecsR(d).join('<br>')+'</div></div>';
 }
 function renderRR(){
 var out=[], i;
@@ -482,6 +480,117 @@ if(/^IDR2000/.test(d.m)) list.push('питание — внешний адапт
 if(/^IDR2100/.test(d.m)) list.push('питание: встроенный AC 100–240В + разъём внешнего 12В БП; 2 слота расширения (IDR-M-4E1/4CE1/4S/4T); <35Вт');
 if(/^IDR3100/.test(d.m)) list.push('два встроенных БП AC — резерв без hot-swap; <86Вт; 4 слота расширения; SR-MPLS/SRv6 + Network Slicing');
 }
+var PPS = {
+'IDS3530-24T-6X':'125','IDS3530-48T-6X':'160,7','IDS3530-24P-6X':'125','IDS3530-48P-6X':'160,7','IDS3530-24S-8T-6X':'136,8',
+'IDS4530-24T-6X':'244','IDS4530-48T-6X':'280','IDS4530-24P-6X':'244','IDS4530-48P-6X':'280','IDS4530-24S-4X':'333,3','IDS4530-48S-4X':'369',
+'IDS6010-24T-18X-8Y':'160,7','IDS6010-24X-2Q':'125','IDS6010-24X-2C':'160,7','IDS6010-48X':'136,8',
+'IDS6012-24M-4X':'416,64','IDS6012-24M':'595,2','IDS6012-24MP':'595,2',
+'IDS6030-48X-8C':'1904','IDS6030-48T-8C':'1607','IDS6032-48X-8C':'1904',
+'IDS6132-48Y-8C':'2976','IDS6150-32C':'4761',
+'IDS8010-32C-8E':'9,52 Bpps','IDS8010-24D-16E':'16,65 Bpps','IDS8010-32E':'19,04 Bpps','IDS8010-32C-8E-R':'9,52 Bpps',
+'IDS8030-2-8':'19,04 Bpps'};
+function fullSpecs(d){
+var m=d.m, L=[], pr='';
+if(/IDSI2500/.test(m)) pr='8× 10/100/1000Base-T + 2× 1G SFP';
+else if(m==='IDS6010-24T-18X-8Y') pr='24× GE + 18× SFP+ (10G) + 8× SFP28 (25G)';
+else if(m==='IDS6010-24X-2Q') pr='24× SFP+ (1/10G) + 2× QSFP+ (40G)';
+else if(m==='IDS6010-24X-2C') pr='24× SFP+ (1/10G) + 2× QSFP/QSFP28 (40/100G)';
+else if(m==='IDS6010-48X') pr='48× SFP/SFP+ (1/10G)';
+else if(m==='IDS6012-24M-4X') pr='24× mGig (100M…10G) + 4× SFP+ (10G)';
+else if(m==='IDS6012-24M'||m==='IDS6012-24MP') pr='24× mGig (100M…10G) + слот расширения M-4X/6X/2Q';
+else if(/4530-24S-4X/.test(m)) pr='24× SFP + 8× GE + 4× SFP+';
+else if(/4530-48S-4X/.test(m)) pr='48× SFP + 4× SFP+';
+else if(/-24S-8T/.test(m)) pr='24× SFP + 8× GE + 6× SFP+ (аплинк)';
+else if(/-48S-6X/.test(m)) pr='48× SFP/SFP+ + 6× SFP+ (аплинк)';
+else if(/6030-48T/.test(m)) pr='48× 1/10G Base-T + 6× QSFP/QSFP28 (40/100G)';
+else if(/6030-48X/.test(m)) pr='48× SFP/SFP+ (1/10G) + 8× QSFP/QSFP28 (40/100G)';
+else if(/6032/.test(m)) pr='48× SFP/SFP+ (1/10G) + 8× QSFP/QSFP28 (40/100G)';
+else if(/6132|6130/.test(m)) pr='48× SFP/SFP+/SFP28 (1/10/25G) + 8× QSFP/QSFP28 (40/100G)';
+else if(/6150/.test(m)) pr='32× QSFP/QSFP28 (40/100G)';
+else if(/8010-24D/.test(m)) pr='24× QSFP56 (100/200G) + 16× QSFP112 (400G)';
+else if(/8010-32E/.test(m)) pr='32× QSFP112 (400G)';
+else if(/8010/.test(m)) pr='32× QSFP28 (100G) + 8× QSFP112 (400G)';
+else if(/8030/.test(m)) pr='2× M-CC (управление, резервируемые) + 8× слотов линеек: M-4E (4×400G / 8×200G / 16×100G), M-16Y (16×10/25G)';
+else if(/(3530|3730|4530)-(24T|48T|24P|48P)/.test(m)) pr=d.ge+'× 10/100/1000Base-T + 6× SFP+ (аплинк 10G)';
+else if(d.ge&&d.sfp) pr=d.ge+'× 10/100/1000Base-T + '+d.sfp+'× SFP/SFP+';
+else if(d.ge) pr=d.ge+'× 10/100/1000Base-T';
+else if(d.sfp) pr=d.sfp+'× SFP/SFP+';
+L.push('<b>порты:</b> '+pr);
+L.push('<b>PoE:</b> '+(d.poeW? (d.upoe? '1440Вт · PoE/PoE+/PoE++ · 90Вт/порт (UPoE)' : d.poeW+'Вт (802.3af/at · 30Вт/порт)') : 'нет'));
+var ps='';
+if(/3530/.test(m)) ps=(/24P|48P/.test(m)? 'одинарный встроенный' : 'двойной встроенный (резерв)')+' · '+(m==='IDS3530-24T-6X'? 'пассивное охлаждение':'2 встроенных вентилятора');
+else if(/3730/.test(m)) ps='2 слота hot-swap · IDP75/500/880-AC · только AC';
+else if(/4530/.test(m)) ps='2 слота 1+1 · IDP120/120M/250/500/500M/880 AC/DC';
+else if(m==='IDS6010-24T-18X-8Y') ps='2 слота hot-swap · IDP120-AC/DC';
+else if(m==='IDS6010-24X-2Q'||m==='IDS6010-24X-2C') ps='2 слота hot-swap · IDP120M-AC/DC';
+else if(m==='IDS6010-48X') ps='2 слота hot-swap · IDP250-AC / IDP500M-DC';
+else if(m==='IDS6012-24M-4X') ps='встроенный IDP120M (одинарный, без hot-swap)';
+else if(m==='IDS6012-24M') ps='2 слота · IDP120M';
+else if(m==='IDS6012-24MP') ps='2 слота · IDP880-AC (только AC)';
+else if(/6030|6150/.test(m)) ps='2 слота hot-swap · IDP550M-01-FTB-AC 550Вт / IDP800M-01-FTB-DC 800Вт / IDP550M-01-BTF-AC · '+( /6150/.test(m)? '6 вентиляторных слотов':'5 вентиляторов');
+else if(/6032/.test(m)) ps='2 слота hot-swap · IDP550M-01-FTB/BTF-AC 550Вт / IDP1300M-01-FTB-DC · 5 вентиляторов IDF-01E';
+else if(/6132/.test(m)) ps='2 слота hot-swap · IDP550M-01-FTB/BTF-AC 550Вт / IDP1300M-01-FTB-DC · 5 вентиляторов IDF-01E';
+else if(/6130/.test(m)) ps='2 слота hot-swap · IDP550M-01 AC / IDP800M-01-FTB-DC · 5 вентиляторов';
+else if(/8010/.test(m)) ps='2 слота hot-swap · IDP1300M-01 AC/DC 1300Вт · 6 вентиляторов IDF-01K';
+else if(/8030/.test(m)) ps='4 слота · IDP1300M-01 AC/DC 1300Вт · 5 вентиляторов';
+else if(/IDSI2500/.test(m)) ps=/8P/.test(m)? 'два DC-входа 48–57В (клеммы, резерв)':'два DC-входа 12–55В (клеммы, резерв)';
+L.push('<b>БП:</b> '+ps);
+var cap = d.sw? (d.sw>=1000? (d.sw/1000)+' Тбит/с' : d.sw+' Гбит/с') : 'не публикуется';
+var pps = PPS[m];
+L.push('<b>коммутация:</b> '+cap+(pps? ' · '+(pps.indexOf('pps')>=0? pps : pps+' Mpps') : (/6130/.test(m)? ' · PPS не публикуется':'')));
+var tb='';
+if(/3530/.test(m)) tb='OOB GE · стек до 8 юнитов';
+else if(/3730/.test(m)) tb='MAC 32K · jumbo 12 000 · VRRP 255 · OOB 100 Мбит · стек до 8';
+else if(/4530/.test(m)) tb='OOB GE · VxLAN/BGP-EVPN + MPLS · слот расширения M-1Q (40/100G) / M-2Q · стек до 8';
+else if(/6010/.test(m)) tb='MAC 384K · jumbo 12K · RAM 2 ГБ / Flash 8 ГБ · стек до 8';
+else if(/6012/.test(m)) tb='M-LAG · VxLAN/BGP-EVPN · стек до 8';
+else if(/6030/.test(m)) tb='RoCEv2 · VxLAN/BGP-EVPN · стек до 8';
+else if(/6032/.test(m)) tb='MAC 448K · jumbo 12K · RAM 4 ГБ / Flash 8 ГБ · OOB GE · ESI Multi-Homing · стек до 8';
+else if(/6132/.test(m)) tb='MAC 448K · jumbo 12K · OOB GE · MTBF ≥200 000 ч · стек до 8';
+else if(/6130/.test(m)) tb='MAC 229 376 · jumbo 9216 · VRRP 128 · в заказе только -R';
+else if(/6150/.test(m)) tb='стек до 8 юнитов';
+else if(/8010/.test(m)) tb=(/-R/.test(m)? 'MAC 163 840 · VRRP 128 · jumbo 9216 · OOB 10/100 · MLAG · VxLAN/BGP-EVPN' : 'OOB GE · MLAG · VxLAN/BGP-EVPN · RoCEv2 · стек до 8 (100G QSFP28)');
+else if(/8030/.test(m)) tb='MLAG · VxLAN/BGP-EVPN · модульное шасси';
+else if(/IDSI2500/.test(m)) tb='IP40 · DIN-рейка · G.8032 ERPS · L2 (без маршрутизации)';
+if(tb) L.push('<b>таблицы и ПО:</b> '+tb);
+var t;
+if(/IDSI2500/.test(m)) t='−40…+75°C';
+else if(/8010-32C-8E-R/.test(m)) t='−5…+40°C';
+else if(/6032|6132/.test(m)) t='0…+50°C';
+else t='0…+45°C';
+var ex='';
+if(/6032/.test(m)) ex=' · 162Вт · 442×420×44,2 мм';
+else if(/6132/.test(m)) ex=' · 220Вт';
+else if(/8010/.test(m)) ex=' · '+(/-R/.test(m)? '784Вт · 12,3 кг' : '≤'+(/32E/.test(m)? '297':'289')+'Вт')+' · 442×560×44,2 мм';
+else if(/8030/.test(m)) ex='';
+L.push('<b>условия:</b> '+t+ex);
+L.push('<b>уровень:</b> '+(d.lvl===3? 'L3 · VxLAN/BGP-EVPN' : d.lvl===2? 'L3' : 'L2')+(d.res? ' · есть -R версия (реестр МП РФ)':''));
+return L;
+}
+function fullSpecsR(d){
+var L=[], pt;
+if(d.fam===0){
+pt=d.p+'× 10/100/1000Base-T'+(d.p===24? ' (лицензия IDS3730-L-24)':'')+' + 6× SFP/SFP+';
+}else if(d.fam===1){
+pt=d.p+'× SFP/SFP+/SFP28 (1/10/25G)'+(d.p===24? ' (лицензия IDS6130-L-24)':'')+' + 8× QSFP/QSFP28 (40/100G)';
+}else{
+pt='32× QSFP28 (100G) + 8× QSFP112 (400G)';
+}
+L.push('<b>порты:</b> '+pt);
+L.push('<b>PoE:</b> '+(d.poeW? d.poeW+'Вт (802.3af/at)'+(d.fam===0&&d.p===24? ' · лицензия IDS3730-L-24PoE':'') : 'нет'));
+L.push('<b>БП:</b> '+d.npsu+'× PSU '+(d.pw? d.pw+'Вт ':'')+(d.acdc? 'DC':'AC')+(d.npsu>1? ' (1+1 резерв)':'')+(d.air<2? ' · обдув '+(d.air? 'BTF (к передней)':'FTB (к задней)'):''));
+L.push('<b>коммутация:</b> '+(d.sw>=1000? d.sw/1000+' Тбит/с' : d.sw+' Гбит/с'));
+L.push('<b>таблицы:</b> '+(d.fam===0? 'MAC 32K · ARP 8K · jumbo 9216 · VRRP 100 · OOB 10/100'
+: d.fam===1? 'MAC 229 376 · IPv4 288K · VRF 1024 · VRRP 128 · ECMP 64 · jumbo 9216'
+: 'MAC 163 840 · ARP 32K · IPv4 288K · VRRP 128 · jumbo 9216'));
+L.push('<b>условия:</b> '+(d.fam===0? '−5…+45°C · RAM 8 ГБ / Flash 16 ГБ · 54Вт · 7,6 кг'
+: d.fam===1? '0…+45°C · RAM 8 ГБ / Flash 128 ГБ · 294Вт · 10,4 кг · 5 вентиляторов'
+: '−5…+40°C · RAM 8 ГБ / Flash 128 ГБ · 784Вт · 12,3 кг · 6 вентиляторов'));
+L.push('<b>ПО:</b> '+(d.fam===0? 'L2/L3 · G.8032 ERPS v1/v2 · 802.1X/MAB · OSPF v2/v3 · PBR · DHCP Server/Relay · QoS'
+: d.fam===1? 'MLAG · VxLAN/BGP-EVPN · Anycast Gateway · G.8032 · OSPF v2/v3 · BGP/BGP4+ · IP-VRF'
+: 'MLAG · VxLAN/BGP-EVPN · 802.1X · OSPF v2/v3 · BGP/BGP4+ · IP-VRF'));
+return L;
+}
 function tags(d){
 var t=[], add=function(x,c){ t.push({t:x, c:c||''}); };
 if(d.ge) add(d.ge+'× GE');
@@ -538,12 +647,13 @@ var d=out[i].d, tg=tags(d), w=[];
 warns(d, w);
 var th='';
 for(var j=0;j<tg.length;j++) th+='<span class="tag '+tg[j].c+'">'+tg[j].t+'</span>';
+var body;
+if(d.cls==='sw') body='<div class="mspecs">'+fullSpecs(d).join('<br>')+'</div>';
+else body='<div class="mspecs">'+d.why+'</div>'+(w.length? '<div class="warn">'+w.join('<br>')+'</div>' : '');
 html+='<div class="mcard'+(i===0?' top':'')+'">'+
 '<div class="mhead"><div class="mname">'+d.m+'</div>'+
 '<div class="star'+(CMP.indexOf(d.m)>=0?' on':'')+'" onclick="cmpToggle(\''+d.m+'\')">★</div></div>'+
-'<div class="mtags">'+th+'</div>'+
-'<div class="mspecs">'+d.why+'</div>'+
-(w.length? '<div class="warn">'+w.join('<br>')+'</div>' : '')+
+'<div class="mtags">'+th+'</div>'+ body +
 '</div>';
 }
 }
