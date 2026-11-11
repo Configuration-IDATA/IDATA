@@ -49,6 +49,10 @@
   .tag.g{background:rgba(57,201,142,.14); color:var(--green);}
   .tag.y{background:rgba(242,193,78,.14); color:var(--gold);}
   .tag.r{background:rgba(224,85,85,.14); color:var(--red);}
+  .flagru{display:inline-block; width:20px; height:13px; border-radius:3px;
+    vertical-align:-1px; margin-right:7px; flex:none;
+    border:1px solid rgba(255,255,255,.28);
+    background:linear-gradient(180deg,#f2f4f8 0 33.4%, #0039a6 33.4% 66.7%, #d52b1e 66.7% 100%);}
   .mspecs{font-size:12.5px; color:var(--muted); line-height:1.55;}
   .mspecs b{color:var(--text); font-weight:600;}
   .mwhy{font-size:12.5px; color:var(--green); margin-top:6px;}
@@ -315,7 +319,7 @@ var tg=rrTags(d), th='';
 for(var j=0;j<tg.length;j++) th+='<span class="tag '+tg[j].c+'">'+tg[j].t+'</span>';
 var w=rrWarns(d);
 return '<div class="mcard'+(top?' top':'')+'">'+
-'<div class="mhead"><div class="mname">'+d.m+'</div>'+
+'<div class="mhead"><div class="mname"><span class="flagru"></span>'+d.m+'</div>'+
 '<div class="star'+(CMP.indexOf(d.m)>=0?' on':'')+'" onclick="cmpToggle(\''+d.m+'\')">★</div></div>'+
 '<div class="mtags">'+th+'</div>'+
 '<div class="mspecs">'+d.why+'</div>'+
@@ -340,7 +344,7 @@ html+='<div class="skuhead" style="margin-top:14px">спецификации с�
 for(i=0;i<RRD.length;i++){
 var f=RRD[i], sh='';
 for(var j=0;j<f.specs.length;j++) sh+='<div class="specli">'+f.specs[j]+'</div>';
-html+='<div class="fam"><div class="mname" onclick="toggleRR('+i+')" style="cursor:pointer">'+f.fam+(rrOpen===i?' ▾':' ▸')+'</div>'+
+html+='<div class="fam"><div class="mname" onclick="toggleRR('+i+')" style="cursor:pointer"><span class="flagru"></span>'+f.fam+(rrOpen===i?' ▾':' ▸')+'</div>'+
 (rrOpen===i? '<div class="role">'+f.role+'</div>'+sh+(f.lic?'<div class="lic">'+f.lic+'</div>':'')+(f.warn?'<div class="warn">'+f.warn+'</div>':'') : '')+
 '</div>';
 }
@@ -530,8 +534,7 @@ title.textContent='Подходят модели';
 html='<div class="empty">по таким требованиям в линейке iDATA пусто.<br>оно и видно по цифрам — попробуй ослабить фильтры.<br><br>известные дыры: 8–12 портов с PoE у iDATA нет вообще; ниже −40°C — только IDSI2500 (L2).</div>';
 }else{
 title.textContent='Подходят модели ('+out.length+')';
-var lim=Math.min(out.length, 6);
-for(i=0;i<lim;i++){
+for(i=0;i<out.length;i++){
 var d=out[i].d, tg=tags(d), w=[];
 warns(d, w);
 var th='';
@@ -544,7 +547,6 @@ html+='<div class="mcard'+(i===0?' top':'')+'">'+
 (w.length? '<div class="warn">'+w.join('<br>')+'</div>' : '')+
 '</div>';
 }
-if(out.length>lim) html+='<div class="empty">…и ещё '+(out.length-lim)+' вариантов — сузь фильтры</div>';
 }
 host.innerHTML=html+renderRef(Q.cls);
 }
