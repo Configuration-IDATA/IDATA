@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#0f1115">
-<title>ОЛ iDATA</title>
+<title>Конфигуратор оборудования IDATA</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
@@ -18,7 +18,7 @@
     font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
   body{padding:max(14px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom));}
   header{display:flex; align-items:baseline; margin:2px 2px 14px;}
-  header h1{font-size:22px; margin:0; letter-spacing:.5px;}
+  header h1{font-size:19px; margin:0; letter-spacing:.3px;}
   header .sub{color:var(--muted); font-size:13px; margin-left:10px;}
 
   .card{background:var(--card); border:1px solid var(--line); border-radius:16px;
@@ -133,8 +133,7 @@
 </head>
 <body>
 <header>
-  <h1>ОЛ iDATA</h1>
-  <span class="sub">подбор по опросному листу</span>
+  <h1>Конфигуратор оборудования IDATA</h1>
 </header>
 
 <div class="card">
@@ -167,6 +166,10 @@
     <div class="qrow">
       <label>Блоки питания <small>— можно выбрать несколько</small></label>
       <div class="segs" id="qpsu"></div>
+    </div>
+    <div class="qrow">
+      <label>Питание <small>— AC из розетки или DC-вариант PSU</small></label>
+      <div class="segs" id="qel"></div>
     </div>
     <div class="qrow">
       <label>Температура</label>
@@ -343,7 +346,7 @@ html+='<div class="fam"><div class="mname" onclick="toggleRR('+i+')" style="curs
 }
 document.getElementById('res').innerHTML=html;
 }
-var Q = {cls:"sw", ge:0, sfp:0, up:0, poe:0, poeW:0, psu:0, temp:0, lvl:2, res:0,
+var Q = {cls:"sw", ge:0, sfp:0, up:0, poe:0, poeW:0, psu:0, el:0, temp:0, lvl:2, res:0,
 rtge:0, rt4g:0, rte1:0, rtup:0, wftype:"ap", wfap:0};
 function segs(host, opts, key, form, st){
 st = st || Q;
@@ -389,13 +392,14 @@ if(v==='ap') Q.wfap=0; }
 buildForm(); render();
 }
 function buildForm(){
-segs('qcls',[{v:'sw',t:'коммутатор'},{v:'rt',t:'маршрутизатор'},{v:'wf',t:'Wi-Fi'},{v:'rr',t:'-R реестровые'}],'cls');
+segs('qcls',[{v:'sw',t:'Коммутаторы'},{v:'rt',t:'Маршрутизаторы'},{v:'wf',t:'Wi-Fi'},{v:'rr',t:'Коммутаторы РРПП'}],'cls');
 segs('qge',[{v:0,t:'неважно'},{v:8,t:'≥8'},{v:24,t:'≥24'},{v:48,t:'≥48'}],'ge');
 segs('qsfp',[{v:0,t:'неважно'},{v:24,t:'≥24'},{v:48,t:'≥48'}],'sfp');
 segs('qup',[{v:0,t:'неважно'},{v:10,t:'10G'},{v:25,t:'25G'},{v:100,t:'100G'},{v:400,t:'400G'}],'up');
 segs('qpoe',[{v:0,t:'не нужно'},{v:30,t:'PoE+ ≤30W'},{v:90,t:'PoE++ 90W (UPoE)'}],'poe');
 segs('qpoew',[{v:0,t:'неважно'},{v:370,t:'≥370W'},{v:720,t:'≥720W'},{v:1440,t:'≥1440W'}],'poeW');
 segsPsu();
+segs('qel',[{v:0,t:'неважно'},{v:1,t:'AC'},{v:2,t:'DC'}],'el');
 segs('qtemp',[{v:0,t:'серверная 0…+45'},{v:1,t:'улица/цех −40'}],'temp');
 segs('qlvl',[{v:1,t:'L2'},{v:2,t:'L3'},{v:3,t:'ЦОД: VxLAN/EVPN'}],'lvl');
 segs('rtge',[{v:0,t:'неважно'},{v:5,t:'5 GE'},{v:8,t:'8 GE'},{v:24,t:'24 GE'}],'rtge');
@@ -425,6 +429,7 @@ if(Q.poeW && d.poeW<Q.poeW) return null;
 if(Q.temp && d.tmin>0) return null;
 if(Q.temp && Q.temp===1 && d.tmin>-40) return null;
 if(Q.psu && !(Q.psu & d.psu)) return null;
+if(Q.el && !(Q.el & d.el)) return null;
 if(Q.lvl===3 && d.lvl<3) return null;
 if(Q.lvl===1 && d.lvl<1) return null;
 var s=0;
@@ -452,6 +457,7 @@ return Q.wfap? Math.max(0, d.ap-Q.wfap)/1000 : d.ap/1000;
 function warns(d, list){
 if(/IDS6130/.test(d.m)) list.push('PPS для 6130 не публикуется — в ТЗ цифру PPS не ставить без письма iDATA');
 if(/IDS3730/.test(d.m)) list.push('OOB у 3730 — 100 Мбит; если ТЗ требует GE-менеджмент — брать 3530/4530');
+if(/IDS3730/.test(d.m)) list.push('PSU только AC (IDP75/500/880-AC); для ТЗ с DC-питанием на доступе — 4530 (IDP120/250/500-DC)');
 if(d.cls==='sw' && d.poeW>0 && !d.upoe) list.push('PoE+ = 30W/порт. Если ТЗ требует 90W (802.3bt) — только IDS6012-24M-4X');
 if(d.res) list.push('суффикс -R = резервируемая (MLAG/VRRP) и реестровая модель МП РФ — плюс в закупках');
 if(d.lvl===3) list.push('для жёстких ТЗ: цифры сайта (окт 2026) ≠ старых PDF — сверить dynaswitch.ru перед подачей');
@@ -624,7 +630,11 @@ if(d.cls==='rt') return 'L3';
 return {1:'L2',2:'L3',3:'L3 · VxLAN/EVPN'}[d.lvl]||'—'; }],
 ['блоки питания', function(x){ var d=x.d;
 if(x.src==='rdb') return d.npsu+'× '+(d.pw?d.pw+'Вт ':'')+(d.acdc?'DC':'AC')+(d.npsu>1?' (резерв)':'');
-return {0:'—',1:'один встроенный',2:'два встроенных (резерв)',4:'модульные hot-swap'}[d.psu]||'—'; }],
+var p={0:'—',1:'один встроенный',2:'два встроенных (резерв)',4:'модульные hot-swap'}[d.psu]||'—';
+if(p!=='—'&&d.el===3) p+=' · AC/DC';
+else if(p!=='—'&&d.el===2) p+=' · только DC';
+else if(p!=='—'&&d.el===1) p+=' · только AC';
+return p; }],
 ['коммутация', function(x){ var d=x.d;
 return d.sw? (d.sw>=1000? d.sw/1000+' Тбит/с' : d.sw+' Гбит/с'):'—'; }],
 ['температура', function(x){ var d=x.d;
@@ -675,8 +685,8 @@ document.getElementById('cmpbody').innerHTML=html;
 }
 buildForm(); render(); cmpBar();
 document.getElementById('ver').textContent = APK
-? ('ол iDATA · apk '+(APK.version?APK.version():''))
-: 'ол iDATA · веб-версия · база dynaswitch.ru 11.11.2026';
+? ('Конфигуратор iDATA · apk '+(APK.version?APK.version():''))
+: 'Конфигуратор iDATA · веб-версия · база dynaswitch.ru 11.11.2026';
 if('serviceWorker' in navigator && location.protocol==='https:'){
 navigator.serviceWorker.register('sw.js').catch(function(){});
 }</script>

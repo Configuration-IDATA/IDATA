@@ -117,6 +117,20 @@ var DB = [
   }
 })();
 
+// ── Питание: 1 = только AC, 2 = только DC, 3 = есть AC и DC-варианты PSU ──
+// даташеты 11.11.2026; 0 = варианты PSU не публикуются (не фильтруется)
+(function(){
+  for(var i=0;i<DB.length;i++){ var m=DB[i].m;
+    if(/IDSI2500/.test(m)) DB[i].el=2;          // DC-клеммы 12–55В, AC нет
+    else if(m==='IDS6012-24M-4X'||m==='IDS6012-24MP') DB[i].el=1; // встроенный AC / IDP880-AC
+    else if(/IDS3530|IDS3730/.test(m)) DB[i].el=1;  // IDP75/500/880-AC — DC не заявлен
+    else if(/iDAC6800/.test(m)) DB[i].el=1;     // даташет: только IDP75-AC / IDP150-AC
+    else if(/IDR2000|IDR2100|IDR3100/.test(m)) DB[i].el=1; // адаптер 12В / встроенный AC ×2
+    else if(/IDS4530|IDS6010|IDS6012-24M|IDS6030|IDS6032|IDS6132|IDS6130|IDS6150|IDS8010|IDS8030/.test(m)) DB[i].el=3;
+    else DB[i].el=0;   // iDAPI (PoE) и IDR4100 (PSU-модели не публикуются)
+  }
+})();
+
 // ═══════════════ РЕЕСТРОВЫЕ МОДЕЛИ (-R, реестр МП РФ) ═══════════════
 // источник: даташеты IDS3730-R / IDS6130-R / IDS8010-R (выгрузка 11.11.2026)
 var RRD = [
