@@ -94,6 +94,13 @@
   .ctab .rm{color:var(--dim); cursor:pointer; font-weight:400; margin-left:4px;}
   .ctab tr.d td{background:rgba(242,193,78,.07);}
   .ctab tr.d td:first-child{background:#20242e; color:var(--gold);}
+  .pnav{display:flex; align-items:center; gap:10px; margin:0 0 10px;}
+  .pnav button{padding:7px 15px; border-radius:10px; background:var(--card2);
+    border:1px solid var(--line); color:var(--text); font-size:15px; cursor:pointer;}
+  .pnav .pi{flex:1; text-align:center; font-size:12.5px; color:var(--muted);}
+  .ctab.fix{table-layout:fixed; width:100%;}
+  .ctab.fix th,.ctab.fix td{min-width:0; word-break:break-word;}
+  .ctab.fix th:first-child,.ctab.fix td:first-child{width:86px;}
 
   /* ── реестровые (-R) ── */
   .fam{background:var(--card); border:1px solid rgba(57,201,142,.45); border-radius:14px;
@@ -457,9 +464,11 @@ if(/IDS4530/.test(d.m)) list.push('БП: 2 слота 1+1 (модули IDP120/1
 if(/IDS6030/.test(d.m)) list.push('БП: 2 слота hot-swap — IDP550M-01-FTB-AC 550Вт / IDP800M-01-FTB-DC 800Вт / IDP550M-01-BTF-AC (обдув вперёд)');
 if(/IDS6150/.test(d.m)) list.push('БП: 2 слота hot-swap — IDP550M-01-FTB-AC 550Вт / IDP800M-01-FTB-DC 800Вт; 6 вентиляторных слотов');
 if(/IDS8030/.test(d.m)) list.push('БП: 4 слота — IDP1300M-01 AC/DC 1300Вт (FTB/BTF обдув); управление 2× IDS8030-M-CC, линки — M-4E/M-16Y');
+if(/^IDS8010/.test(d.m) && !/-R/.test(d.m)) list.push('у обычного 8010 OOB GE и 0…+45°C; у -R — OOB 10/100 и −5…+40°C: в ТЗ цифры только одной версии');
 if(/IDS6012/.test(d.m)) list.push('даташет 11.2026: PoE++ 1440Вт / 90Вт на порт — только у 24MP (PSU IDP880); 24M-4X — без PoE (БП встроенный). 6012-M-4X/6X/2Q — модули расширения для слота, не коммутаторы');
 if(/IDSI2500/.test(d.m)) list.push('двойное питание = два резервируемых DC-входа на клеммы, не модули БП');
 if(d.cls==='rt') list.push('throughput/FIB в даташетах IDR не публикуются (даташеты 09.2025) — перед тендером запросить performance-письмо. RIPv1/v2/RIPng и полный MPLS (LDP/VPLS/TE/FRR/L3VPN/6PE) — подтверждены');
+if(d.cls==='wf' && d.wf==='ac') list.push('PSU только AC (IDP75-AC/IDP150-AC, 2 слота); базовая лицензия 64 AP у 448/1664 и 128 у 6656 — в ТЗ не путать; трансиверы в комплект не входят — проверять');
 if(/^IDR2000/.test(d.m)) list.push('питание — внешний адаптер 12В (в комплекте); базовая 2000 — пассивная, без вентилятора; 2000E — с вентилятором. −20…+60°C');
 if(/^IDR2100/.test(d.m)) list.push('питание: встроенный AC 100–240В + разъём внешнего 12В БП; 2 слота расширения (IDR-M-4E1/4CE1/4S/4T); <35Вт');
 if(/^IDR3100/.test(d.m)) list.push('два встроенных БП AC — резерв без hot-swap; <86Вт; 4 слота расширения; SR-MPLS/SRv6 + Network Slicing');
@@ -533,8 +542,23 @@ if(out.length>lim) html+='<div class="empty">…и ещё '+(out.length-lim)+' �
 }
 host.innerHTML=html+renderRef(Q.cls);
 }
-var CMP = [], CMPDO = false;
+var CMP = [], CMPDO = false, CMPP = 0, CMPV = [];
 try{ CMP = JSON.parse(localStorage.getItem('olcmp')||'[]')||[]; }catch(e){ CMP=[]; }
+function cmpPairs(){
+var p=[], i, j;
+for(i=0;i<CMP.length;i++) for(j=i+1;j<CMP.length;j++) p.push([CMP[i],CMP[j]]);
+return p;
+}
+function cmpView(){
+var p=cmpPairs();
+if(CMPP>=p.length) CMPP=0;
+CMPV = p.length? p[CMPP] : [];
+}
+function cmpPair(d){
+var p=cmpPairs(); if(p.length<2) return;
+CMPP = (CMPP+d+p.length)%p.length;
+cmpView(); cmpFill();
+}
 function cmpGet(m){
 var i;
 for(i=0;i<DB.length;i++) if(DB[i].m===m) return {src:'db', d:DB[i]};
@@ -560,12 +584,12 @@ var i=CMP.indexOf(m);
 if(i>=0) CMP.splice(i,1);
 else if(CMP.length>=6){ cmpToast('максимум 6 — сними звезду у кого-нибудь'); cmpBar(); return; }
 else CMP.push(m);
-cmpSave(); render(); cmpBar();
+cmpSave(); render(); cmpBar(); cmpView();
 if(document.getElementById('cmpov').style.display==='flex'){
 if(CMP.length<2) cmpClose(); else cmpFill();
 }
 }
-function cmpClear(){ CMP=[]; cmpSave(); render(); cmpBar(); cmpClose(); }
+function cmpClear(){ CMP=[]; CMPP=0; CMPV=[]; cmpSave(); render(); cmpBar(); cmpClose(); }
 function cmpDiffToggle(){
 CMPDO=!CMPDO;
 document.getElementById('difft').className='seg'+(CMPDO?' on':'');
@@ -577,6 +601,7 @@ document.body.style.overflow='';
 }
 function cmpOpen(){
 if(CMP.length<2){ cmpToast('отметь звёздочкой хотя бы две модели'); return; }
+cmpView();
 document.getElementById('difft').className='seg'+(CMPDO?' on':'');
 cmpFill();
 document.getElementById('cmpov').style.display='flex';
@@ -605,7 +630,10 @@ return d.sw? (d.sw>=1000? d.sw/1000+' Тбит/с' : d.sw+' Гбит/с'):'—';
 ['температура', function(x){ var d=x.d;
 if(x.src==='rdb') return ['−5…+45°C','0…+45°C','−5…+40°C'][d.fam];
 return d.tmin<0? 'от '+d.tmin+'°C' : '0…+45°C'; }],
-['реестр МП РФ', function(x){ return x.src==='rdb'?'да':(x.d.res?'есть -R версия':'нет'); }],
+['реестр МП РФ', function(x){
+if(x.src==='rdb') return 'да';
+if(/-R$/.test(x.d.m)) return 'да (-R)';
+return x.d.res?'есть -R версия':'нет'; }],
 ['4G-модем', function(x){
 return (x.src==='db'&&x.d.cls==='rt')? ((x.d.g4||0)? x.d.g4+'× 4G':'нет'):'—'; }],
 ['слоты E1', function(x){
@@ -618,9 +646,15 @@ if(x.src==='db') warns(x.d,w); else w=rrWarns(x.d);
 return w.length? w.join('<br>'):'—'; }]
 ];
 function cmpFill(){
+var list = (CMPV.length===2)? CMPV : CMP.slice(0,2);
 var ms=[], i, j;
-for(i=0;i<CMP.length;i++){ var g=cmpGet(CMP[i]); if(g) ms.push(g); }
-var html='<table class="ctab"><thead><tr><th>параметр</th>';
+for(i=0;i<list.length;i++){ var g=cmpGet(list[i]); if(g) ms.push(g); }
+var pairs=cmpPairs(), html='';
+if(pairs.length>1)
+html+='<div class="pnav"><button onclick="cmpPair(-1)">◀</button>'+
+'<span class="pi">пара '+(CMPP+1)+' из '+pairs.length+'</span>'+
+'<button onclick="cmpPair(1)">▶</button></div>';
+html+='<table class="ctab fix"><thead><tr><th>параметр</th>';
 for(i=0;i<ms.length;i++)
 html+='<th>'+ms[i].d.m+'<span class="rm" onclick="cmpToggle(\''+ms[i].d.m+'\')">✕</span></th>';
 html+='</tr></thead><tbody>';
